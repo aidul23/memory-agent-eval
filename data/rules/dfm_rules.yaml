@@ -1,0 +1,51 @@
+# Design-for-Manufacturing (DFM) rule pack.
+# Each rule has a stable id, a human description, and a structured `check`
+# specification consumed by `src/evaluation/rule_checker.py`.
+
+rule_pack: dfm
+rules:
+  - id: DFM-001
+    description: Minimum wall thickness for injection-molded ABS parts must be >= 1.5 mm.
+    check:
+      type: numeric_min
+      field: wall_thickness_mm
+      min: 1.5
+    severity: high
+    rationale: >
+      Walls thinner than 1.5 mm risk short shots and warpage in standard ABS molding.
+
+  - id: DFM-002
+    description: Draft angle on vertical faces must be >= 1.0 degrees.
+    check:
+      type: numeric_min
+      field: draft_angle_deg
+      min: 1.0
+    severity: high
+    rationale: Insufficient draft causes ejection drag and surface scuffing.
+
+  - id: DFM-003
+    description: Avoid undercuts unless side-action tooling is justified.
+    check:
+      type: boolean_false
+      field: has_undercut
+    severity: medium
+    rationale: Undercuts add side-action tooling cost and slow down cycle time.
+
+  - id: DFM-004
+    description: Internal radii at sharp corners must be >= 0.5 mm to reduce stress concentration.
+    check:
+      type: numeric_min
+      field: internal_radius_mm
+      min: 0.5
+    severity: medium
+    rationale: Sharp internal corners concentrate stress and can cause part failure.
+
+  - id: DFM-005
+    description: Boss outer diameter should be <= 2.5x the nominal wall thickness.
+    check:
+      type: ratio_max
+      numerator: boss_outer_diameter_mm
+      denominator: wall_thickness_mm
+      max: 2.5
+    severity: low
+    rationale: Oversized bosses cause sink marks on the opposite show surface.

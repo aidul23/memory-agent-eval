@@ -1,0 +1,24 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+env/
+.env
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.DS_Store
+
+# Experiment outputs (keep folder structure but ignore generated content)
+results/raw_logs/*.jsonl
+results/raw_logs/**/*.jsonl
+results/metrics/*.csv
+results/plots/*.png
+results/plots/*.pdf
+
+# Persistent memory stores
+data/persistent_memory/
+*.sqlite
+*.db

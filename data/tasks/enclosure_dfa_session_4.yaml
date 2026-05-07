@@ -1,0 +1,36 @@
+task_id: enclosure_dfa_s4
+scenario_name: handheld_enclosure
+session_id: 4
+input_description: >
+  Transfer task: The same handheld enclosure must now be evaluated for
+  Design-for-Assembly (DFA). The DFA rule pack is different from DFM, but
+  prior decisions about boss count, fastener choice, and wall thickness
+  carry over. Memory-augmented agents that retained DFM context should
+  out-perform stateless agents.
+design_context:
+  material: ABS
+  process: injection_molding
+  candidate_assembly:
+    part_count: 11
+    has_self_locating_features: false
+    distinct_fastener_types: 3
+    has_blind_assembly: true
+dfx_rules_path: data/rules/dfa_rules.yaml
+constraints:
+  - "Manual assembly time target: <= 45 s."
+  - "No specialized fixturing."
+expected_output_format: structured_json
+hidden_dependency_from_previous_sessions: >
+  This task uses a different rule pack but the same design lineage. Knowledge
+  of the boss layout and wall thickness from sessions 1-3 helps recommend
+  part-count reductions and self-locating boss features.
+evaluation_criteria:
+  rule_pack: dfa
+  ground_truth_design:
+    part_count: 11
+    has_self_locating_features: false
+    distinct_fastener_types: 3
+    has_blind_assembly: true
+  expected_violations: [DFA-001, DFA-002, DFA-003, DFA-004]
+  required_fields: [summary, dfx_rule_analysis, final_recommendation]
+  total_subtasks: 4

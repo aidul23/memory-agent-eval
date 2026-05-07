@@ -1,0 +1,62 @@
+# Top-level experiment configuration.
+# This file is the single source of truth for a run. Anything not specified here
+# falls back to defaults defined in `src/utils/config_loader.py`.
+
+experiment_name: dfx_memory_agent_evaluation
+description: >
+  Cross-factor evaluation of memory mechanisms in LLM-based agents performing
+  iterative Design-for-X (DFx) tasks.
+
+# Number of repeated runs per (memory x llm x task) condition.
+runs_per_condition: 3
+
+# Sampling temperature passed to every LLM. Kept at 0.0 for reproducibility.
+temperature: 0.0
+
+# Random seed used for any stochastic evaluation step (rule sampling, etc.).
+seed: 42
+
+# Memory systems to compare. Names must match keys in `configs/memory_systems.yaml`.
+memory_systems:
+  - stateless
+  - hindsight
+  - contextual
+  - persistent
+  # The following require external services / API keys. Keep commented for offline runs.
+  # - mem0
+  # - zep
+  # - supermemory
+  # - acontext
+
+# LLMs to evaluate. Names must match providers registered in `src/llms/`.
+# Use `mock` for fully-offline reproducibility (deterministic stub responses).
+llms:
+  # - provider: mock
+  #   model: mock-deterministic
+  - provider: openai
+    model: gpt-4o-mini
+  # - provider: google
+  #   model: gemini-1.5-pro
+  # - provider: anthropic
+  #   model: claude-3-5-sonnet-latest
+  # - provider: local
+  #   model: deepseek-r1
+
+# Where to find the task corpus. The runner loads every *.yaml / *.json file
+# in this folder (recursively) and groups them by `scenario_name`.
+tasks:
+  path: data/tasks/
+  # Optional list of scenario_names to include. Empty = include everything.
+  include_scenarios: []
+  # Optional list of scenario_names to skip.
+  exclude_scenarios: []
+
+evaluation:
+  save_raw_logs: true
+  save_metrics: true
+  generate_plots: true
+  output_dir: results/
+
+logging:
+  level: INFO
+  console: true

@@ -1,0 +1,38 @@
+task_id: enclosure_dfm_s2
+scenario_name: handheld_enclosure
+session_id: 2
+input_description: >
+  Second iteration of the handheld enclosure. The team has applied corrections
+  based on initial feedback. Re-evaluate against DFM rules and flag any
+  remaining violations. Note: at least one parameter from session 1 is still
+  marginal - prior reasoning should help locate it.
+design_context:
+  material: ABS
+  process: injection_molding
+  dimensions_mm: [120, 65, 22]
+  candidate_design:
+    wall_thickness_mm: 1.6
+    draft_angle_deg: 1.2
+    has_undercut: false
+    internal_radius_mm: 0.4   # Still below 0.5 - must be flagged again
+    boss_outer_diameter_mm: 3.6
+dfx_rules_path: data/rules/dfm_rules.yaml
+constraints:
+  - "Cycle time target: <= 35 s."
+  - "Tooling budget: low."
+expected_output_format: structured_json
+hidden_dependency_from_previous_sessions: >
+  Session 1 flagged five violations. Session 2 fixes four of them but leaves
+  internal_radius_mm at 0.4 (rule DFM-004). Memory-augmented agents should
+  notice this carry-over.
+evaluation_criteria:
+  rule_pack: dfm
+  ground_truth_design:
+    wall_thickness_mm: 1.6
+    draft_angle_deg: 1.2
+    has_undercut: false
+    internal_radius_mm: 0.4
+    boss_outer_diameter_mm: 3.6
+  expected_violations: [DFM-004]
+  required_fields: [summary, dfx_rule_analysis, final_recommendation]
+  total_subtasks: 5

@@ -1,0 +1,54 @@
+# Provider-specific defaults. The experiment runner merges these into per-call
+# kwargs unless the experiment.yaml entry overrides them.
+#
+# Cost values are illustrative defaults used by the metrics module to estimate
+# experiment cost. They can be overridden per-model and are NOT authoritative.
+
+providers:
+  openai:
+    base_url: https://api.openai.com/v1
+    default_model: gpt-4o-mini
+    request_timeout: 60
+    cost_per_1k_input_tokens:
+      gpt-4o-mini: 0.00015
+      gpt-4o: 0.0025
+      o3: 0.015
+    cost_per_1k_output_tokens:
+      gpt-4o-mini: 0.0006
+      gpt-4o: 0.01
+      o3: 0.06
+
+  google:
+    default_model: gemini-1.5-pro
+    request_timeout: 60
+    cost_per_1k_input_tokens:
+      gemini-1.5-pro: 0.00125
+      gemini-1.5-flash: 0.000075
+    cost_per_1k_output_tokens:
+      gemini-1.5-pro: 0.005
+      gemini-1.5-flash: 0.0003
+
+  anthropic:
+    default_model: claude-3-5-sonnet-latest
+    request_timeout: 60
+    cost_per_1k_input_tokens:
+      claude-3-5-sonnet-latest: 0.003
+      claude-3-5-haiku-latest: 0.0008
+      claude-opus-4: 0.015
+    cost_per_1k_output_tokens:
+      claude-3-5-sonnet-latest: 0.015
+      claude-3-5-haiku-latest: 0.004
+      claude-opus-4: 0.075
+
+  local:
+    base_url_env: OLLAMA_BASE_URL
+    default_model: llama3.1
+    request_timeout: 120
+    cost_per_1k_input_tokens: {}
+    cost_per_1k_output_tokens: {}
+
+  mock:
+    default_model: mock-deterministic
+    request_timeout: 0
+    cost_per_1k_input_tokens: {}
+    cost_per_1k_output_tokens: {}

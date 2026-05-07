@@ -1,0 +1,46 @@
+# Memory-system specific defaults. Keys map to classes registered in
+# `src/memory/__init__.py`. Each block is forwarded as kwargs to the
+# corresponding class constructor.
+
+stateless:
+  class: StatelessMemory
+
+hindsight:
+  class: HindsightMemory
+  max_reflections: 50
+  top_k: 5
+  # When true the hindsight summarizer uses the same LLM as the agent.
+  # When false a deterministic local summarizer is used (faster, free).
+  use_llm_summarizer: false
+
+contextual:
+  class: ContextualMemory
+  max_entries: 200
+  top_k: 5
+  similarity: jaccard   # Pure-Python token similarity. No embeddings needed.
+
+persistent:
+  class: PersistentMemory
+  storage_path: data/persistent_memory/persistent_store.jsonl
+  top_k: 5
+  similarity: jaccard
+
+mem0:
+  class: Mem0Memory
+  user_id: dfx_agent
+  top_k: 5
+
+zep:
+  class: ZepMemory
+  session_id_prefix: dfx
+  top_k: 5
+
+supermemory:
+  class: SupermemoryMemory
+  collection: dfx_agent
+  top_k: 5
+
+acontext:
+  class: AContextMemory
+  workspace: dfx_agent
+  top_k: 5

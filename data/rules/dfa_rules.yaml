@@ -1,0 +1,36 @@
+# Design-for-Assembly (DFA) rule pack used by transfer tasks.
+rule_pack: dfa
+rules:
+  - id: DFA-001
+    description: Minimize part count - prefer integration when functionally equivalent.
+    check:
+      type: numeric_max
+      field: part_count
+      max: 8
+    severity: high
+    rationale: Fewer parts reduce assembly time and inventory complexity.
+
+  - id: DFA-002
+    description: Use self-locating features (e.g., chamfers, alignment pins).
+    check:
+      type: boolean_true
+      field: has_self_locating_features
+    severity: medium
+    rationale: Self-locating features reduce operator alignment errors.
+
+  - id: DFA-003
+    description: Standardize fasteners - use at most 2 distinct fastener types.
+    check:
+      type: numeric_max
+      field: distinct_fastener_types
+      max: 2
+    severity: medium
+    rationale: Fastener variety drives tooling and inventory cost.
+
+  - id: DFA-004
+    description: Avoid blind assembly steps that require operator feel.
+    check:
+      type: boolean_false
+      field: has_blind_assembly
+    severity: high
+    rationale: Blind operations are error-prone and slow.

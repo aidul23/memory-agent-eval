@@ -1,0 +1,34 @@
+task_id: enclosure_dfm_s1
+scenario_name: handheld_enclosure
+session_id: 1
+input_description: >
+  Initial DFM review of a handheld plastic enclosure for a consumer IoT device.
+  The candidate design has been proposed by the mechanical team. Identify all
+  DFM violations and recommend corrections.
+design_context:
+  material: ABS
+  process: injection_molding
+  dimensions_mm: [120, 65, 22]
+  candidate_design:
+    wall_thickness_mm: 1.1
+    draft_angle_deg: 0.5
+    has_undercut: true
+    internal_radius_mm: 0.2
+    boss_outer_diameter_mm: 4.5
+dfx_rules_path: data/rules/dfm_rules.yaml
+constraints:
+  - "Cycle time target: <= 35 s."
+  - "Tooling budget: low."
+expected_output_format: structured_json   # See README -> "Agent output schema"
+hidden_dependency_from_previous_sessions: null
+evaluation_criteria:
+  rule_pack: dfm
+  ground_truth_design:
+    wall_thickness_mm: 1.1
+    draft_angle_deg: 0.5
+    has_undercut: true
+    internal_radius_mm: 0.2
+    boss_outer_diameter_mm: 4.5
+  expected_violations: [DFM-001, DFM-002, DFM-003, DFM-004, DFM-005]
+  required_fields: [summary, dfx_rule_analysis, final_recommendation]
+  total_subtasks: 5

@@ -1,0 +1,41 @@
+task_id: enclosure_dfm_s3
+scenario_name: handheld_enclosure
+session_id: 3
+input_description: >
+  Third iteration introduces a NEW constraint: the enclosure must accept a
+  thermal vent insert. The team must propose a design that simultaneously
+  satisfies all existing DFM rules AND the new thermal constraint. Decisions
+  made in earlier sessions (e.g. wall thickness, boss sizing) should NOT be
+  forgotten - the agent should reason about cumulative trade-offs.
+design_context:
+  material: ABS
+  process: injection_molding
+  dimensions_mm: [120, 65, 22]
+  candidate_design:
+    wall_thickness_mm: 1.6
+    draft_angle_deg: 1.2
+    has_undercut: false
+    internal_radius_mm: 0.6
+    boss_outer_diameter_mm: 3.6
+  new_requirement: thermal_vent_insert
+dfx_rules_path: data/rules/dfm_rules.yaml
+constraints:
+  - "Cycle time target: <= 35 s."
+  - "Tooling budget: low."
+  - "Thermal vent must not introduce undercuts."
+expected_output_format: structured_json
+hidden_dependency_from_previous_sessions: >
+  Earlier sessions established wall_thickness at the lower bound. The agent
+  should recall that adding thermal venting features should NOT push wall
+  thickness back below 1.5 mm.
+evaluation_criteria:
+  rule_pack: dfm
+  ground_truth_design:
+    wall_thickness_mm: 1.6
+    draft_angle_deg: 1.2
+    has_undercut: false
+    internal_radius_mm: 0.6
+    boss_outer_diameter_mm: 3.6
+  expected_violations: []
+  required_fields: [summary, dfx_rule_analysis, final_recommendation]
+  total_subtasks: 5
