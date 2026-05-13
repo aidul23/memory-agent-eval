@@ -69,45 +69,55 @@ def cmd_run_single(
     mem_kwargs = (mem_defaults.get(memory_name) if mem_defaults else {}) or {}
 
     memory = create_memory(memory_name, **mem_kwargs)
-    llm = create_llm(provider=llm_provider, model=model_name)
-    agent = MemoryAgent(llm=llm, memory=memory, temperature=temperature)
-    evaluator = Evaluator()
+    try:
+        llm = create_llm(provider=llm_provider, model=model_name)
+        agent = MemoryAgent(llm=llm, memory=memory, temperature=temperature)
+        evaluator = Evaluator()
 
-    task = TaskLoader(Path(task_path).parent).load_task(task_path)
-    result = agent.run(task)
-    eval_res = evaluator.evaluate(
-        task=task,
-        agent_response=result.response,
-        retrieved_memory=result.retrieved_memory,
-    )
-    interaction = {
-        "task": task.model_dump(),
-        "memory_system": memory_name,
-        "llm_provider": llm_provider,
-        "model_name": model_name,
-        "temperature": temperature,
-        "agent_response": result.response,
-        "evaluation_result": {
-            "task_success": eval_res.task_success,
-            "rule_compliance_score": eval_res.rule_compliance_score,
-            "violated_rules": eval_res.violated_rules,
-            "correct_subtasks": eval_res.correct_subtasks,
-            "total_subtasks": eval_res.total_subtasks,
-            "progress_score": eval_res.progress_score,
-            "memory_usage_quality": eval_res.memory_usage_quality,
-        },
-        "feedback": eval_res.feedback,
-        "retrieved_memory": result.memory_as_dicts(),
-        "token_usage": {
-            "input_tokens": getattr(result.llm_response, "input_tokens", 0),
-            "output_tokens": getattr(result.llm_response, "output_tokens", 0),
-            "latency_s": getattr(result.llm_response, "latency_s", 0.0),
-            "estimated_cost_usd": getattr(result.llm_response, "estimated_cost_usd", 0.0),
-        },
-    }
-    if output_path:
-        JsonlWriter(output_path).write(interaction)
-    click.echo(json.dumps(interaction, indent=2, default=str))
+        task = TaskLoader(Path(task_path).parent).load_task(task_path)
+        result = agent.run(task)
+        eval_res = evaluator.evaluate(
+            task=task,
+            agent_response=result.response,
+            retrieved_memory=result.retrieved_memory,
+        )
+        interaction = {
+            "task": task.model_dump(),
+            "memory_system": memory_name,
+            "llm_provider": llm_provider,
+            "model_name": model_name,
+            "temperature": temperature,
+            "agent_response": result.response,
+            "evaluation_result": {
+                "task_success": eval_res.task_success,
+                "rule_compliance_score": eval_res.rule_compliance_score,
+                "violated_rules": eval_res.violated_rules,
+                "correct_subtasks": eval_res.correct_subtasks,
+                "total_subtasks": eval_res.total_subtasks,
+                "progress_score": eval_res.progress_score,
+                "memory_usage_quality": eval_res.memory_usage_quality,
+            },
+            "feedback": eval_res.feedback,
+            "retrieved_memory": result.memory_as_dicts(),
+            "token_usage": {
+                "input_tokens": getattr(result.llm_response, "input_tokens", 0),
+                "output_tokens": getattr(result.llm_response, "output_tokens", 0),
+                "latency_s": getattr(result.llm_response, "latency_s", 0.0),
+                "estimated_cost_usd": getattr(result.llm_response, "estimated_cost_usd", 0.0),
+            },
+        }
+        if output_path:
+            JsonlWriter(output_path).write(interaction)
+        click.echo(json.dumps(interaction, indent=2, default=str))
+    finally:
+        # Always release SDK transports (aiohttp/httpx sessions held by
+        # Mem0/Zep/AContext/Hindsight). No-op for in-process memories.
+        closer = getattr(memory, "close", None)
+        if callable(closer):
+            try:
+                closer()
+            except Exception:  # noqa: BLE001
+                pass
 
 
 @cli.command("analyze", help="Aggregate raw JSONL logs into CSV summaries + plots.")
@@ -115,13 +125,23 @@ def cmd_run_single(
               type=click.Path(file_okay=False), show_default=True)
 @click.option("--output", "output_dir", default="results/", type=click.Path(file_okay=False),
               show_default=True)
+@click.option("--experiment-id", "experiment_id", default=None,
+              help="Restrict analysis to a single experiment_id. "
+                   "If omitted, aggregates EVERY JSONL under --results "
+                   "(useful for cross-experiment comparisons, "
+                   "potentially confusing otherwise).")
 @click.option("--no-plots", is_flag=True, default=False, help="Skip plot generation.")
-def cmd_analyze(results_dir: str, output_dir: str, no_plots: bool) -> None:
+def cmd_analyze(
+    results_dir: str,
+    output_dir: str,
+    experiment_id: str | None,
+    no_plots: bool,
+) -> None:
     from .analysis.aggregate_results import aggregate
     from .analysis.statistical_analysis import run_basic_stats
     from .analysis.visualizations import render_all
 
-    summary = aggregate(results_dir, output_dir=output_dir)
+    summary = aggregate(results_dir, output_dir=output_dir, experiment_id=experiment_id)
     stats = run_basic_stats(summary["frame_path"], output_dir=output_dir)
     if not no_plots:
         render_all(summary["frame_path"], output_dir=os.path.join(output_dir, "plots"))

@@ -97,26 +97,38 @@ class ExperimentRunner:
                         run_index + 1, self.runs_per_condition,
                     )
 
-                    for scenario in scenarios:
-                        if not self.cross_scenario_memory:
-                            memory.reset()
-                        prior_feedback: dict[str, Any] | None = None
-                        for task in scenario.sessions:
-                            n_interactions += 1
-                            self._run_one(
-                                run_id=run_id,
-                                run_index=run_index,
-                                memory_name=memory_name,
-                                llm_spec=llm_spec,
-                                memory=memory,
-                                agent=agent,
-                                evaluator=evaluator,
-                                task=task,
-                                prior_feedback=prior_feedback,
-                            )
-                            # Reload the last log entry's feedback for the next session.
-                            # (We do this via the agent path inside _run_one return value.)
-                            prior_feedback = self._last_feedback
+                    try:
+                        for scenario in scenarios:
+                            if not self.cross_scenario_memory:
+                                memory.reset()
+                            prior_feedback: dict[str, Any] | None = None
+                            for task in scenario.sessions:
+                                n_interactions += 1
+                                self._run_one(
+                                    run_id=run_id,
+                                    run_index=run_index,
+                                    memory_name=memory_name,
+                                    llm_spec=llm_spec,
+                                    memory=memory,
+                                    agent=agent,
+                                    evaluator=evaluator,
+                                    task=task,
+                                    prior_feedback=prior_feedback,
+                                )
+                                # Reload the last log entry's feedback for the next session.
+                                # (We do this via the agent path inside _run_one return value.)
+                                prior_feedback = self._last_feedback
+                    finally:
+                        # Release transport resources held by external memory
+                        # SDKs (httpx/aiohttp). Safe to call on any BaseMemory:
+                        # ExternalMemoryBase implements close(); in-process
+                        # memories ignore it via the getattr fallback below.
+                        closer = getattr(memory, "close", None)
+                        if callable(closer):
+                            try:
+                                closer()
+                            except Exception:  # noqa: BLE001
+                                logger.debug("memory.close() raised; ignoring.")
 
         elapsed = time.perf_counter() - t_start
         summary = {
@@ -164,6 +176,11 @@ class ExperimentRunner:
             "scenario_name": task.scenario_name,
             "session_id": task.session_id,
             "task_id": task.task_id,
+            # run_id lets external memories scope sessions/banks per-run, so a
+            # condition's run #0 cannot read run #1's data.
+            "run_id": run_id,
+            "run_index": run_index,
+            "experiment_id": self.experiment_id,
         }
         # Update memory AFTER evaluation so it sees canonical feedback.
         memory.update(interaction)

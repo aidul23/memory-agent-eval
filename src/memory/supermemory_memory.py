@@ -1,17 +1,18 @@
-"""Supermemory wrapper.
+"""Supermemory wrapper - DEPRECATED.
 
-Real integration sketch using Supermemory's REST API:
+Supermemory does not currently offer a fully self-hostable deployment
+(their stack depends on Cloudflare Workers/R2/KV). To keep the experiment
+suite "self-hosted only", Supermemory has been dropped from the active
+registry. This file is preserved so importers do not crash; the class
+raises ``NotImplementedError`` if instantiated.
 
-    POST /v1/memories      body: {content, collection}
-    GET  /v1/memories/search?q=&collection=
-
-This wrapper falls back to a local in-memory store when no API key is
-present, so the rest of the pipeline can still be exercised offline.
+To re-enable Supermemory, switch to its hosted SaaS (set
+``SUPERMEMORY_API_KEY``) and re-register the class in
+``src/memory/__init__.py::_REGISTRY``.
 """
 
 from __future__ import annotations
 
-import os
 from typing import Any
 
 from ._external_base import ExternalMemoryBase
@@ -20,19 +21,12 @@ from ._external_base import ExternalMemoryBase
 class SupermemoryMemory(ExternalMemoryBase):
     name = "supermemory"
 
-    def __init__(
-        self,
-        collection: str = "dfx_agent",
-        top_k: int = 5,
-        **kwargs: Any,
-    ) -> None:
-        self.collection = collection
-        self._api_key = kwargs.pop("api_key", None) or os.getenv("SUPERMEMORY_API_KEY")
-        self._base_url = kwargs.pop("base_url", "https://api.supermemory.ai")
-        super().__init__(top_k=top_k, **kwargs)
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        raise NotImplementedError(
+            "SupermemoryMemory is currently disabled because Supermemory has "
+            "no fully self-hostable deployment. To re-enable, use their hosted "
+            "SaaS and restore the registry entry in src/memory/__init__.py."
+        )
 
-    def _connect(self) -> Any:
-        if not self._api_key:
-            raise RuntimeError("SUPERMEMORY_API_KEY not set")
-        # Real impl would create a session here.
-        return {"base_url": self._base_url, "api_key": self._api_key}
+    def _connect(self) -> Any:  # pragma: no cover - unreachable
+        raise NotImplementedError

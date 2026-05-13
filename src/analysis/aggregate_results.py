@@ -13,10 +13,18 @@ from ..utils import get_logger
 logger = get_logger(__name__)
 
 
-def load_runs(results_dir: str | Path) -> pd.DataFrame:
+def load_runs(
+    results_dir: str | Path,
+    *,
+    experiment_id: str | None = None,
+) -> pd.DataFrame:
     """Read every *.jsonl file under ``results_dir`` and return a long-form DataFrame.
 
     Each row is one (experiment, run, task, session) interaction.
+
+    If ``experiment_id`` is provided, only rows belonging to that experiment
+    are kept. This is the recommended way to scope analysis to a single run
+    without manually managing the ``raw_logs/`` directory.
     """
     p = Path(results_dir)
     rows: list[dict[str, Any]] = []
@@ -30,9 +38,12 @@ def load_runs(results_dir: str | Path) -> pd.DataFrame:
                     obj = json.loads(line)
                 except json.JSONDecodeError:
                     continue
+                if experiment_id and obj.get("experiment_id") != experiment_id:
+                    continue
                 rows.append(_flatten(obj, source=str(fp)))
     if not rows:
-        logger.warning("No JSONL records found under %s", results_dir)
+        scope = f" matching experiment_id={experiment_id!r}" if experiment_id else ""
+        logger.warning("No JSONL records found under %s%s", results_dir, scope)
     return pd.DataFrame(rows)
 
 
@@ -70,8 +81,17 @@ def _flatten(rec: dict[str, Any], *, source: str) -> dict[str, Any]:
     }
 
 
-def aggregate(results_dir: str | Path, output_dir: str | Path) -> dict[str, Any]:
+def aggregate(
+    results_dir: str | Path,
+    output_dir: str | Path,
+    *,
+    experiment_id: str | None = None,
+) -> dict[str, Any]:
     """Produce condition-level CSV summaries + the long-form frame.
+
+    If ``experiment_id`` is provided, restricts the aggregation to rows
+    from that experiment only. This is the way to keep separate
+    experimental runs from polluting each other's statistics.
 
     Returns paths to the CSVs produced, plus a small textual summary.
     """
@@ -79,7 +99,7 @@ def aggregate(results_dir: str | Path, output_dir: str | Path) -> dict[str, Any]
     metrics_dir = out / "metrics"
     metrics_dir.mkdir(parents=True, exist_ok=True)
 
-    df = load_runs(results_dir)
+    df = load_runs(results_dir, experiment_id=experiment_id)
     frame_path = metrics_dir / "interactions.csv"
     df.to_csv(frame_path, index=False)
 

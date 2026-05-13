@@ -101,35 +101,45 @@ All three are merged on top of platform defaults defined in
 ### Environment variables
 
 ```
+# LLMs
 OPENAI_API_KEY=
 ANTHROPIC_API_KEY=
 GOOGLE_API_KEY=
 OLLAMA_BASE_URL=http://localhost:11434
 
-MEM0_API_KEY=
+# External memory backends (self-hosted defaults)
+MEM0_VECTOR_STORE=qdrant
+MEM0_QDRANT_URL=http://localhost:6333
+MEM0_LLM_PROVIDER=openai
+MEM0_LLM_MODEL=gpt-4o-mini
+
 ZEP_API_URL=http://localhost:8000
 ZEP_API_KEY=
-SUPERMEMORY_API_KEY=
-ACONTEXT_API_KEY=
+
+ACONTEXT_API_URL=http://localhost:8029/api/v1
+ACONTEXT_API_KEY=sk-ac-your-root-api-bearer-token
+
+HINDSIGHT_API_URL=http://localhost:8888
+HINDSIGHT_API_KEY=
 ```
 
-If a provider key is missing the corresponding LLM / external memory class
+If any LLM key or memory backend is unreachable the corresponding class
 falls back to a clearly-logged stub - the pipeline still runs.
 
 ---
 
 ## Memory systems
 
-| Name           | Class                  | Notes                                                |
-|----------------|------------------------|------------------------------------------------------|
-| `stateless`    | `StatelessMemory`      | No-op baseline.                                      |
-| `hindsight`    | `HindsightMemory`      | Stores feedback-driven reflections.                  |
-| `contextual`   | `ContextualMemory`     | Stores task context, decisions, feedback.            |
-| `persistent`   | `PersistentMemory`     | JSONL-backed long-term store, survives restarts.     |
-| `mem0`         | `Mem0Memory`           | Wraps mem0ai SDK; falls back to local stub.          |
-| `zep`          | `ZepMemory`            | Wraps zep-python; falls back to local stub.          |
-| `supermemory`  | `SupermemoryMemory`    | REST placeholder; falls back to local stub.          |
-| `acontext`     | `AContextMemory`       | Placeholder; falls back to local stub.               |
+| Name           | Class                       | Backend                                          |
+|----------------|-----------------------------|--------------------------------------------------|
+| `stateless`    | `StatelessMemory`           | No-op baseline. Stores nothing.                  |
+| `reflection`   | `ReflectionMemory`          | In-RAM hand-rolled reflections + Jaccard retrieval. (Was `hindsight` in v0.1.) |
+| `contextual`   | `ContextualMemory`          | In-RAM richer per-task context store.            |
+| `persistent`   | `PersistentMemory`          | JSONL on disk, survives restarts.                |
+| `mem0`         | `Mem0Memory`                | **Self-hosted Mem0** via Qdrant + an LLM (in-process library). |
+| `zep`          | `ZepMemory`                 | **Self-hosted Zep Community Edition** via Docker compose. |
+| `acontext`     | `AContextMemory`            | **Self-hosted AContext** via `acontext server up`. |
+| `hindsight`    | `VectorizeHindsightMemory`  | **Self-hosted Vectorize.io Hindsight** via Docker. |
 
 All implement the same interface:
 
@@ -141,8 +151,83 @@ class BaseMemory:
     def export_memory(self) -> dict: ...
 ```
 
-Adding a new memory only requires implementing those four methods and
-registering the class in `src/memory/__init__.py::_REGISTRY`.
+> **Naming note.** In v0.1 the `hindsight` key referred to our hand-rolled
+> reflection technique. From v0.2 onwards `hindsight` refers to Vectorize.io's
+> Hindsight memory service, and the old technique was renamed to `reflection`.
+> A backwards-compatibility shim still lets `from src.memory.hindsight_memory
+> import HindsightMemory` work; it emits a `DeprecationWarning` and behaves
+> exactly like `ReflectionMemory`.
+
+> **Supermemory** is intentionally not registered: it has no fully
+> self-hostable deployment today. To re-enable, see
+> `src/memory/supermemory_memory.py`.
+
+### External memory configuration
+
+External memories take a `reset_policy` kwarg (set per-memory in
+`configs/memory_systems.yaml`):
+
+| Policy             | Local mirror | Remote data | Use case                                  |
+|--------------------|--------------|-------------|-------------------------------------------|
+| `clear_remote`     | cleared      | cleared     | Default - per-run isolation for stats.    |
+| `keep_remote`      | cleared      | kept        | Study cross-run / long-term learning.     |
+| `clear_local_only` | cleared      | kept        | Explicit alias of `keep_remote`.          |
+
+Adding a new memory only requires implementing the four `BaseMemory`
+methods and registering the class in `src/memory/__init__.py::_REGISTRY`.
+
+### Infrastructure setup (self-hosted)
+
+Bring up only the servers you intend to compare. All four wrappers fall
+back to a clearly-logged in-RAM stub if their server is unreachable, so
+this is fully incremental.
+
+**1. Qdrant (vector store for Mem0)**
+
+```bash
+docker run -d --name qdrant -p 6333:6333 -p 6334:6334 \
+  -v "$(pwd)/qdrant_storage:/qdrant/storage" \
+  qdrant/qdrant
+pip install mem0ai qdrant-client
+```
+
+**2. Zep Community Edition**
+
+```bash
+git clone https://github.com/getzep/zep && cd zep
+docker compose up -d
+pip install zep-cloud
+```
+
+**3. AContext**
+
+```bash
+curl -fsSL https://install.acontext.io | sh
+mkdir -p acontext_server && cd acontext_server
+echo 'LLM_API_KEY="$OPENAI_API_KEY"' > .env
+acontext server up
+pip install acontext
+```
+
+**4. Vectorize Hindsight**
+
+```bash
+docker run -d --name hindsight -p 8888:8888 \
+  -e HINDSIGHT_API_LLM_API_KEY=$OPENAI_API_KEY \
+  ghcr.io/vectorize-io/hindsight
+pip install hindsight-client
+```
+
+**Verify all four are healthy:**
+
+```bash
+for url in http://localhost:8888/healthz http://localhost:6333/collections \
+           http://localhost:8000/healthz http://localhost:8029/api/v1/healthz; do
+  echo "── $url"; curl -sS -o /dev/null -w "%{http_code}\n" $url
+done
+```
+
+Then uncomment the corresponding entries in `configs/experiment.yaml::memory_systems`.
 
 ---
 
@@ -329,8 +414,15 @@ full pipeline smoke test (stateless vs hindsight on the canonical scenario).
 
 ## Roadmap
 
-- Real Mem0 / Zep / Supermemory / AContext integrations once each SDK
-  stabilises (the wrapper interfaces are already in place).
-- Embedding-based retrieval for `ContextualMemory` and `PersistentMemory`.
-- LLM-based reflection summariser for `HindsightMemory`
+- ✅ Real Mem0, Zep CE, AContext, and Vectorize Hindsight integrations
+  (self-hosted; SDKs are optional dependencies).
+- ✅ Configurable `reset_policy` per external memory.
+- ✅ `run_id` propagation to external memories so per-run session/bank
+  scoping works cleanly.
+- Supermemory integration once their self-host story is complete.
+- Embedding-based retrieval for `ContextualMemory`, `PersistentMemory`,
+  and `ReflectionMemory`.
+- LLM-based reflection summariser for `ReflectionMemory`
   (the `use_llm_summarizer` flag is already plumbed through).
+- Dedicated dashboard "Memory inspector" page (retrieval distribution,
+  growth-over-time, retrieved-vs-used Sankey).

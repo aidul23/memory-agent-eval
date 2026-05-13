@@ -1,0 +1,309 @@
+{
+  "n_rows": 144,
+  "anova_memory_system_on_compliance": {
+    "f_stat": 1.6029158764530976e-31,
+    "p_value": 1.0,
+    "n_groups": 8
+  },
+  "anova_llm_provider_on_compliance": null,
+  "two_way_memory_x_llm_on_compliance": null,
+  "tukey_memory_system_on_compliance": [
+    {
+      "group1": "acontext",
+      "group2": "contextual",
+      "mean_diff": 0.0,
+      "p_adj": 1.0,
+      "lower": -0.5102,
+      "upper": 0.5102,
+      "reject": false
+    },
+    {
+      "group1": "acontext",
+      "group2": "hindsight",
+      "mean_diff": 0.0,
+      "p_adj": 1.0,
+      "lower": -0.5102,
+      "upper": 0.5102,
+      "reject": false
+    },
+    {
+      "group1": "acontext",
+      "group2": "mem0",
+      "mean_diff": 0.0,
+      "p_adj": 1.0,
+      "lower": -0.5891,
+      "upper": 0.5891,
+      "reject": false
+    },
+    {
+      "group1": "acontext",
+      "group2": "persistent",
+      "mean_diff": 0.0,
+      "p_adj": 1.0,
+      "lower": -0.5102,
+      "upper": 0.5102,
+      "reject": false
+    },
+    {
+      "group1": "acontext",
+      "group2": "reflection",
+      "mean_diff": 0.0,
+      "p_adj": 1.0,
+      "lower": -0.5891,
+      "upper": 0.5891,
+      "reject": false
+    },
+    {
+      "group1": "acontext",
+      "group2": "stateless",
+      "mean_diff": 0.0,
+      "p_adj": 1.0,
+      "lower": -0.5102,
+      "upper": 0.5102,
+      "reject": false
+    },
+    {
+      "group1": "acontext",
+      "group2": "zep",
+      "mean_diff": 0.0,
+      "p_adj": 1.0,
+      "lower": -0.5891,
+      "upper": 0.5891,
+      "reject": false
+    },
+    {
+      "group1": "contextual",
+      "group2": "hindsight",
+      "mean_diff": 0.0,
+      "p_adj": 1.0,
+      "lower": -0.4166,
+      "upper": 0.4166,
+      "reject": false
+    },
+    {
+      "group1": "contextual",
+      "group2": "mem0",
+      "mean_diff": 0.0,
+      "p_adj": 1.0,
+      "lower": -0.5102,
+      "upper": 0.5102,
+      "reject": false
+    },
+    {
+      "group1": "contextual",
+      "group2": "persistent",
+      "mean_diff": 0.0,
+      "p_adj": 1.0,
+      "lower": -0.4166,
+      "upper": 0.4166,
+      "reject": false
+    },
+    {
+      "group1": "contextual",
+      "group2": "reflection",
+      "mean_diff": 0.0,
+      "p_adj": 1.0,
+      "lower": -0.5102,
+      "upper": 0.5102,
+      "reject": false
+    },
+    {
+      "group1": "contextual",
+      "group2": "stateless",
+      "mean_diff": 0.0,
+      "p_adj": 1.0,
+      "lower": -0.4166,
+      "upper": 0.4166,
+      "reject": false
+    },
+    {
+      "group1": "contextual",
+      "group2": "zep",
+      "mean_diff": 0.0,
+      "p_adj": 1.0,
+      "lower": -0.5102,
+      "upper": 0.5102,
+      "reject": false
+    },
+    {
+      "group1": "hindsight",
+      "group2": "mem0",
+      "mean_diff": 0.0,
+      "p_adj": 1.0,
+      "lower": -0.5102,
+      "upper": 0.5102,
+      "reject": false
+    },
+    {
+      "group1": "hindsight",
+      "group2": "persistent",
+      "mean_diff": 0.0,
+      "p_adj": 1.0,
+      "lower": -0.4166,
+      "upper": 0.4166,
+      "reject": false
+    },
+    {
+      "group1": "hindsight",
+      "group2": "reflection",
+      "mean_diff": 0.0,
+      "p_adj": 1.0,
+      "lower": -0.5102,
+      "upper": 0.5102,
+      "reject": false
+    },
+    {
+      "group1": "hindsight",
+      "group2": "stateless",
+      "mean_diff": 0.0,
+      "p_adj": 1.0,
+      "lower": -0.4166,
+      "upper": 0.4166,
+      "reject": false
+    },
+    {
+      "group1": "hindsight",
+      "group2": "zep",
+      "mean_diff": 0.0,
+      "p_adj": 1.0,
+      "lower": -0.5102,
+      "upper": 0.5102,
+      "reject": false
+    },
+    {
+      "group1": "mem0",
+      "group2": "persistent",
+      "mean_diff": 0.0,
+      "p_adj": 1.0,
+      "lower": -0.5102,
+      "upper": 0.5102,
+      "reject": false
+    },
+    {
+      "group1": "mem0",
+      "group2": "reflection",
+      "mean_diff": 0.0,
+      "p_adj": 1.0,
+      "lower": -0.5891,
+      "upper": 0.5891,
+      "reject": false
+    },
+    {
+      "group1": "mem0",
+      "group2": "stateless",
+      "mean_diff": 0.0,
+      "p_adj": 1.0,
+      "lower": -0.5102,
+      "upper": 0.5102,
+      "reject": false
+    },
+    {
+      "group1": "mem0",
+      "group2": "zep",
+      "mean_diff": 0.0,
+      "p_adj": 1.0,
+      "lower": -0.5891,
+      "upper": 0.5891,
+      "reject": false
+    },
+    {
+      "group1": "persistent",
+      "group2": "reflection",
+      "mean_diff": 0.0,
+      "p_adj": 1.0,
+      "lower": -0.5102,
+      "upper": 0.5102,
+      "reject": false
+    },
+    {
+      "group1": "persistent",
+      "group2": "stateless",
+      "mean_diff": 0.0,
+      "p_adj": 1.0,
+      "lower": -0.4166,
+      "upper": 0.4166,
+      "reject": false
+    },
+    {
+      "group1": "persistent",
+      "group2": "zep",
+      "mean_diff": 0.0,
+      "p_adj": 1.0,
+      "lower": -0.5102,
+      "upper": 0.5102,
+      "reject": false
+    },
+    {
+      "group1": "reflection",
+      "group2": "stateless",
+      "mean_diff": 0.0,
+      "p_adj": 1.0,
+      "lower": -0.5102,
+      "upper": 0.5102,
+      "reject": false
+    },
+    {
+      "group1": "reflection",
+      "group2": "zep",
+      "mean_diff": 0.0,
+      "p_adj": 1.0,
+      "lower": -0.5891,
+      "upper": 0.5891,
+      "reject": false
+    },
+    {
+      "group1": "stateless",
+      "group2": "zep",
+      "mean_diff": 0.0,
+      "p_adj": 1.0,
+      "lower": -0.5102,
+      "upper": 0.5102,
+      "reject": false
+    }
+  ],
+  "tukey_llm_provider_on_compliance": null,
+  "effect_sizes_vs_stateless": [
+    {
+      "memory_system": "acontext",
+      "n_treatment": 12,
+      "n_baseline": 24,
+      "cohens_d_vs_stateless": 0.0
+    },
+    {
+      "memory_system": "contextual",
+      "n_treatment": 24,
+      "n_baseline": 24,
+      "cohens_d_vs_stateless": 0.0
+    },
+    {
+      "memory_system": "hindsight",
+      "n_treatment": 24,
+      "n_baseline": 24,
+      "cohens_d_vs_stateless": 0.0
+    },
+    {
+      "memory_system": "mem0",
+      "n_treatment": 12,
+      "n_baseline": 24,
+      "cohens_d_vs_stateless": 0.0
+    },
+    {
+      "memory_system": "persistent",
+      "n_treatment": 24,
+      "n_baseline": 24,
+      "cohens_d_vs_stateless": 0.0
+    },
+    {
+      "memory_system": "reflection",
+      "n_treatment": 12,
+      "n_baseline": 24,
+      "cohens_d_vs_stateless": 0.0
+    },
+    {
+      "memory_system": "zep",
+      "n_treatment": 12,
+      "n_baseline": 24,
+      "cohens_d_vs_stateless": 0.0
+    }
+  ]
+}

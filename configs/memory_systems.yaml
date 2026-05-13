@@ -1,23 +1,26 @@
 # Memory-system specific defaults. Keys map to classes registered in
 # `src/memory/__init__.py`. Each block is forwarded as kwargs to the
 # corresponding class constructor.
+#
+# reset_policy (external memories only):
+#   clear_remote     - wipe local + remote on each reset() (default; per-run isolation)
+#   keep_remote      - clear only the local mirror (study cross-run learning)
+#   clear_local_only - alias of keep_remote; explicit
 
 stateless:
   class: StatelessMemory
 
-hindsight:
-  class: HindsightMemory
+reflection:
+  class: ReflectionMemory
   max_reflections: 50
   top_k: 5
-  # When true the hindsight summarizer uses the same LLM as the agent.
-  # When false a deterministic local summarizer is used (faster, free).
   use_llm_summarizer: false
 
 contextual:
   class: ContextualMemory
   max_entries: 200
   top_k: 5
-  similarity: jaccard   # Pure-Python token similarity. No embeddings needed.
+  similarity: jaccard
 
 persistent:
   class: PersistentMemory
@@ -29,18 +32,27 @@ mem0:
   class: Mem0Memory
   user_id: dfx_agent
   top_k: 5
+  reset_policy: clear_remote
 
 zep:
   class: ZepMemory
   session_id_prefix: dfx
   top_k: 5
-
-supermemory:
-  class: SupermemoryMemory
-  collection: dfx_agent
-  top_k: 5
+  reset_policy: clear_remote
 
 acontext:
   class: AContextMemory
   workspace: dfx_agent
   top_k: 5
+  reset_policy: clear_remote
+
+# Vectorize.io Hindsight (real memory service).
+# Note: registry key is `hindsight`. Our old internal "Hindsight" technique
+# is now `reflection` (see entry above).
+hindsight:
+  class: VectorizeHindsightMemory
+  bank_prefix: dfx
+  top_k: 5
+  budget: mid
+  max_tokens: 2048
+  reset_policy: clear_remote

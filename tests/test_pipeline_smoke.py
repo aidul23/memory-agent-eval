@@ -1,7 +1,7 @@
 """End-to-end smoke test using the deterministic Mock LLM.
 
 This is the experiment described in the README's "Quick start" section:
-compare stateless vs hindsight memory on the handheld_enclosure scenario.
+compare stateless vs reflection memory on the handheld_enclosure scenario.
 
 We assert two properties:
 1. The pipeline runs to completion and writes JSONL records.
@@ -25,7 +25,7 @@ CONFIG = {
     "experiment_name": "smoke_test",
     "runs_per_condition": 1,
     "temperature": 0.0,
-    "memory_systems": ["stateless", "hindsight"],
+    "memory_systems": ["stateless", "reflection"],
     "llms": [{"provider": "mock", "model": "mock-deterministic"}],
     "tasks": {"path": "data/tasks/"},
     "evaluation": {"output_dir": "results/"},
@@ -50,16 +50,16 @@ def test_pipeline_runs_end_to_end(tmp_results):
     records = [json.loads(line) for line in log_path.read_text().splitlines() if line.strip()]
     assert records, "pipeline did not produce any records"
 
-    by_mem = {"stateless": [], "hindsight": []}
+    by_mem = {"stateless": [], "reflection": []}
     for r in records:
         by_mem[r["memory_system"]].append(r)
 
     # Both conditions cover all four sessions.
     assert len(by_mem["stateless"]) == 4
-    assert len(by_mem["hindsight"]) == 4
+    assert len(by_mem["reflection"]) == 4
 
 
-def test_hindsight_outperforms_stateless_on_certainty(tmp_results):
+def test_reflection_outperforms_stateless_on_certainty(tmp_results):
     out, cfg = tmp_results
     runner = ExperimentRunner(cfg)
     summary = runner.run()
@@ -76,9 +76,9 @@ def test_hindsight_outperforms_stateless_on_certainty(tmp_results):
         return certain, total
 
     stateless = [r for r in records if r["memory_system"] == "stateless"]
-    hindsight = [r for r in records if r["memory_system"] == "hindsight"]
+    reflection = [r for r in records if r["memory_system"] == "reflection"]
     s_cert, s_tot = certain_decisions(stateless)
-    h_cert, h_tot = certain_decisions(hindsight)
+    h_cert, h_tot = certain_decisions(reflection)
 
     # The mock LLM is configured so memory-augmented mode evaluates more
     # rules with certainty. This is a sanity check that the memory plumbing

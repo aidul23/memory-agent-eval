@@ -17,16 +17,25 @@ temperature: 0.0
 seed: 42
 
 # Memory systems to compare. Names must match keys in `configs/memory_systems.yaml`.
+#
+# Note on naming:
+# - `reflection` is our hand-rolled feedback-reflection memory (the technique
+#   formerly registered as `hindsight`).
+# - `hindsight` now refers to Vectorize.io's Hindsight memory SERVICE.
+#
+# The external memories (mem0, zep, acontext, hindsight) only do useful work
+# when their respective servers are running locally. They fall back to a
+# clearly-logged in-RAM stub otherwise, so the pipeline still runs.
 memory_systems:
   - stateless
-  - hindsight
+  - reflection
   - contextual
   - persistent
-  # The following require external services / API keys. Keep commented for offline runs.
-  # - mem0
-  # - zep
-  # - supermemory
-  # - acontext
+  # Uncomment after bringing up the corresponding server (see README "Infra setup"):
+  - mem0          # needs Qdrant on :6333 + OPENAI_API_KEY
+  - zep           # needs Zep CE on :8000
+  - acontext      # needs `acontext server up` on :8029
+  - hindsight     # needs Vectorize Hindsight on :8888
 
 # LLMs to evaluate. Names must match providers registered in `src/llms/`.
 # Use `mock` for fully-offline reproducibility (deterministic stub responses).

@@ -21,9 +21,14 @@ anthropic>=0.30.0
 google-generativeai>=0.7.0
 requests>=2.31.0
 
-# External memory provider placeholders (optional)
-# mem0ai>=0.1.0
-# zep-python>=2.0.0
+# External memory providers (optional - install only the ones you actually run).
+# Each wrapper falls back to a clearly-logged local stub if the SDK is missing,
+# so the platform stays runnable without these.
+# mem0ai>=0.1.94          # self-hostable in-process library; needs a vector store
+# qdrant-client>=1.9.0    # Mem0 default vector store backend
+# zep-cloud>=2.0.0        # works against both Zep Cloud and self-hosted CE (via base_url)
+# acontext>=0.2.0         # AContext Python client
+# hindsight-client>=0.6.0 # Vectorize.io Hindsight client
 
 # Optional dashboard
 streamlit>=1.33.0
