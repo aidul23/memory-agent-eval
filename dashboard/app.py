@@ -34,16 +34,54 @@ st.caption(
 default_results = ROOT / "results" / "raw_logs"
 results_dir = st.sidebar.text_input("Results directory", value=str(default_results))
 
+# Manual cache-buster: if the user deletes/renames JSONL files between
+# Streamlit reruns, we'd otherwise serve stale paths from cache and crash on
+# `open()`. The button below clears every cached function.
+if st.sidebar.button("Reload from disk"):
+    st.cache_data.clear()
+
+
+def _dir_signature(path: str) -> tuple[tuple[str, int, float], ...]:
+    """Return a hashable fingerprint of every JSONL file in ``path``.
+
+    Streamlit re-runs cached functions only when arguments change, so we
+    pass this signature alongside the path. Whenever any file is added,
+    removed, or modified, the signature changes and the cache invalidates.
+    """
+    p = Path(path)
+    if not p.exists():
+        return tuple()
+    sig = []
+    for fp in sorted(p.glob("**/*.jsonl")):
+        try:
+            stat = fp.stat()
+        except OSError:
+            continue
+        sig.append((str(fp), stat.st_size, stat.st_mtime))
+    return tuple(sig)
+
 
 @st.cache_data(show_spinner=False)
-def _load(path: str) -> pd.DataFrame:
+def _load(path: str, _signature: tuple) -> pd.DataFrame:
     return load_runs(path)
 
 
-df = _load(results_dir)
+df = _load(results_dir, _dir_signature(results_dir))
 if df.empty:
     st.warning("No JSONL records found. Run an experiment first.")
     st.stop()
+
+# Drop rows whose source_file vanished from disk since the cache was filled.
+# Belt-and-braces on top of the signature-based invalidation above.
+if "source_file" in df.columns:
+    existing = df["source_file"].dropna().map(lambda p: Path(p).exists())
+    df = df[existing | df["source_file"].isna()]
+    if df.empty:
+        st.warning(
+            "All cached log files have been deleted. "
+            "Click **Reload from disk** in the sidebar."
+        )
+        st.stop()
 
 
 # ---- Sidebar filters ------------------------------------------------------
@@ -138,19 +176,36 @@ else:
 # ---- Raw record viewer ---------------------------------------------------
 
 st.subheader("Raw record viewer")
-if "source_file" in f.columns and len(f["source_file"].unique()) > 0:
-    file_choice = st.selectbox(
-        "Source JSONL", sorted(f["source_file"].unique().tolist())
-    )
-    rows: list[dict] = []
-    with open(file_choice, "r", encoding="utf-8") as fh:
-        for line in fh:
-            line = line.strip()
-            if line:
-                try:
-                    rows.append(json.loads(line))
-                except Exception:
-                    continue
-    if rows:
-        idx = st.slider("Record", 0, len(rows) - 1, 0)
-        st.json(rows[idx])
+if "source_file" in f.columns:
+    # Only offer files that still exist on disk - protects against the
+    # selectbox holding a stale path from a previous session.
+    candidate_files = [
+        p for p in sorted(f["source_file"].dropna().unique().tolist())
+        if Path(p).exists()
+    ]
+    if not candidate_files:
+        st.info(
+            "No source files left on disk for the current filter. "
+            "Use **Reload from disk** in the sidebar if you recently moved files."
+        )
+    else:
+        file_choice = st.selectbox("Source JSONL", candidate_files)
+        rows: list[dict] = []
+        try:
+            with open(file_choice, "r", encoding="utf-8") as fh:
+                for line in fh:
+                    line = line.strip()
+                    if line:
+                        try:
+                            rows.append(json.loads(line))
+                        except json.JSONDecodeError:
+                            continue
+        except FileNotFoundError:
+            st.warning(
+                f"`{file_choice}` was removed since the dashboard last refreshed. "
+                "Click **Reload from disk** in the sidebar."
+            )
+            rows = []
+        if rows:
+            idx = st.slider("Record", 0, len(rows) - 1, 0)
+            st.json(rows[idx])

@@ -27,10 +27,10 @@ seed: 42
 # when their respective servers are running locally. They fall back to a
 # clearly-logged in-RAM stub otherwise, so the pipeline still runs.
 memory_systems:
-  - stateless
-  - reflection
-  - contextual
-  - persistent
+  # - stateless
+  # - reflection
+  # - contextual
+  # - persistent
   # Uncomment after bringing up the corresponding server (see README "Infra setup"):
   - mem0          # needs Qdrant on :6333 + OPENAI_API_KEY
   - zep           # needs Zep CE on :8000
