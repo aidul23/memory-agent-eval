@@ -32,10 +32,10 @@ memory_systems:
   # - contextual
   # - persistent
   # Uncomment after bringing up the corresponding server (see README "Infra setup"):
-  - mem0          # needs Qdrant on :6333 + OPENAI_API_KEY
-  - zep           # needs Zep CE on :8000
-  - acontext      # needs `acontext server up` on :8029
-  - hindsight     # needs Vectorize Hindsight on :8888
+  # - mem0        # needs Qdrant on :6333 + OPENAI_API_KEY
+  # - zep         # needs Zep CE on :8000
+  # - acontext    # needs `acontext server up` on :8029
+  - hindsight     # needs Vectorize Hindsight on :8888 (docker compose up -d hindsight)
 
 # LLMs to evaluate. Names must match providers registered in `src/llms/`.
 # Use `mock` for fully-offline reproducibility (deterministic stub responses).

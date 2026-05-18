@@ -1,0 +1,39 @@
+# Local infra for the memory-agent-eval experiments.
+#
+# Bring services up one at a time as we wire them in:
+#   docker compose up -d hindsight
+#
+# Each service reads its secrets from the sibling `.env` file (the same
+# `.env` the Python runner already uses).
+
+services:
+  # --- Vectorize.io Hindsight -----------------------------------------
+  # Consumed by `src/memory/vectorize_hindsight_memory.py` via the
+  # `hindsight-client` SDK pointed at HINDSIGHT_API_URL.
+  hindsight:
+    image: ghcr.io/vectorize-io/hindsight:latest
+    container_name: mae-hindsight
+    restart: unless-stopped
+    ports:
+      - "8888:8888"   # API (used by the eval runner)
+      - "9999:9999"   # Control-plane UI (optional, handy for debugging)
+    environment:
+      HINDSIGHT_API_LLM_PROVIDER: openai
+      HINDSIGHT_API_LLM_MODEL: gpt-4o-mini
+      HINDSIGHT_API_LLM_API_KEY: ${OPENAI_API_KEY:?OPENAI_API_KEY must be set in .env}
+    volumes:
+      - hindsight_data:/home/hindsight/.pg0
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >
+          python -c "import socket,sys;
+          s=socket.socket(); s.settimeout(3);
+          s.connect(('127.0.0.1', 8888)); s.close()" || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 30s
+
+volumes:
+  hindsight_data:

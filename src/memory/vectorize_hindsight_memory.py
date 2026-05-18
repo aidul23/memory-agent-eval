@@ -29,11 +29,17 @@ We use the official ``hindsight-client`` package; install with
 
 from __future__ import annotations
 
+import json
 import os
+import urllib.error
+import urllib.request
 from typing import Any
 
+from ..utils import get_logger
 from ._external_base import ExternalMemoryBase
 from .base_memory import MemoryItem
+
+logger = get_logger(__name__)
 
 
 class VectorizeHindsightMemory(ExternalMemoryBase):
@@ -57,6 +63,13 @@ class VectorizeHindsightMemory(ExternalMemoryBase):
         )
         self._api_key = kwargs.pop("api_key", None) or os.getenv("HINDSIGHT_API_KEY")
         self._known_banks: set[str] = set()
+        # `MemoryAgent.run()` does NOT thread the experiment's `run_id` into
+        # the retrieve-side context, but the runner's update-side
+        # `interaction` dict does. Cache the run_id from the first `update()`
+        # so subsequent `retrieve()` calls hit the same bank instead of the
+        # default "no-run" partition. Lifetime is one wrapper instance,
+        # which the runner re-creates per run_index, so isolation is intact.
+        self._current_run_id: str | None = None
         super().__init__(top_k=top_k, **kwargs)
 
     def _connect(self) -> Any:
@@ -78,8 +91,22 @@ class VectorizeHindsightMemory(ExternalMemoryBase):
     # ---- Bank scoping -------------------------------------------------
 
     def _bank_id(self, ctx: dict[str, Any]) -> str:
-        scenario = ctx.get("scenario_name") or "default"
-        run_id = ctx.get("run_id") or "no_run"
+        # `ctx` is either the retrieve-side `context` dict (scenario flat) or
+        # the update-side `interaction` dict (scenario also nested under
+        # "task"). Read both so writes and reads always target the same bank
+        # even if a caller forgets to mirror scenario_name to the top level.
+        task = ctx.get("task") or {}
+        scenario = (
+            ctx.get("scenario_name")
+            or task.get("scenario_name")
+            or "default"
+        )
+        run_id = (
+            ctx.get("run_id")
+            or task.get("run_id")
+            or self._current_run_id
+            or "no_run"
+        )
         # bank_id allowed chars are conservative; use ascii + dashes.
         raw = f"{self.bank_prefix}--{run_id}--{scenario}"
         return raw.lower().replace("_", "-").replace(":", "-")
@@ -137,6 +164,11 @@ class VectorizeHindsightMemory(ExternalMemoryBase):
     def _remote_update(self, interaction: dict[str, Any]) -> None:
         if self._client is None:
             return
+        # Cache the run_id so subsequent retrieve() calls (which currently
+        # receive no run_id from `MemoryAgent.run`) target the same bank.
+        rid = interaction.get("run_id") or (interaction.get("task") or {}).get("run_id")
+        if rid:
+            self._current_run_id = str(rid)
         bank_id = self._bank_id(interaction)
         self._ensure_bank(bank_id)
         item = self._build_item(interaction)
@@ -166,7 +198,14 @@ class VectorizeHindsightMemory(ExternalMemoryBase):
             raise RuntimeError(f"hindsight.retain failed: {exc}") from exc
 
     def _remote_clear(self) -> None:
-        """Delete every bank we created in this process.
+        """Delete every bank belonging to this experiment.
+
+        `_known_banks` is per-process, but the runner spins up a fresh
+        wrapper instance per run_index and calls `reset()` immediately,
+        which means data left behind by a previous instance would persist
+        and leak across runs. To honour reset_policy=clear_remote's "clean
+        slate" contract we also enumerate banks server-side and delete any
+        whose id starts with our `bank_prefix` (a project-scoped namespace).
 
         Transport cleanup (closing the aiohttp session) is handled by
         ``ExternalMemoryBase.close()``; callers should use the context
@@ -174,7 +213,22 @@ class VectorizeHindsightMemory(ExternalMemoryBase):
         """
         if self._client is None:
             return
-        for bank_id in list(self._known_banks):
+        targets: set[str] = set(self._known_banks)
+        prefix = f"{self.bank_prefix.lower()}--"
+        try:
+            url = f"{self._api_url.rstrip('/')}/v1/default/banks"
+            with urllib.request.urlopen(url, timeout=10) as resp:
+                payload = json.loads(resp.read().decode())
+            for b in payload.get("banks", []) or []:
+                bid = b.get("bank_id") if isinstance(b, dict) else None
+                if isinstance(bid, str) and bid.startswith(prefix):
+                    targets.add(bid)
+        except (urllib.error.URLError, urllib.error.HTTPError, ValueError, OSError) as exc:
+            # Listing isn't strictly required for correctness in the happy
+            # case where the runner only uses one wrapper instance; warn
+            # and proceed with whatever in-process tracking we have.
+            logger.warning("[%s] could not enumerate banks for cleanup: %s", self.name, exc)
+        for bank_id in targets:
             fn = getattr(self._client, "delete_bank", None)
             if callable(fn):
                 try:
