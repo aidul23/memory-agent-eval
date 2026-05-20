@@ -1,0 +1,8 @@
+{
+  "experiment_id": "dfx_memory_agent_evaluation_20260518T120846Z_8fc65a",
+  "experiment_name": "dfx_memory_agent_evaluation",
+  "conditions": 3,
+  "interactions": 12,
+  "elapsed_s": 106.528,
+  "raw_log_path": "results/raw_logs/dfx_memory_agent_evaluation_20260518T120846Z_8fc65a.jsonl"
+}
